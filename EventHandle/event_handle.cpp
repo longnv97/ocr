@@ -6,7 +6,11 @@
 #include <sys/stat.h>
 #include <unistd.h>
 #include <queue>
+#include <pthread.h>
+#include <mutex>
 
+using namespace std;
+std::mutex g_mutex;
 const std::string currentDateTime() {
     time_t     now = time(0);
     struct tm  tstruct;
@@ -15,51 +19,68 @@ const std::string currentDateTime() {
     strftime(buf, sizeof(buf), "%Y%m%d%h%s", &tstruct);
     return buf;
 }
-
 static std::queue<WriteImage_t> WriteImageQueue;
 
-void updateImgToSave(WriteImage_t writeImg)
+void updateImgToSave(WriteImage_t &writeImg)
 {
+    std::lock_guard<std::mutex> lk(g_mutex);
     if (WriteImageQueue.size() < 3)
         WriteImageQueue.push(writeImg);
+
+    // WriteImageQueue.front();
+    cv::Mat img_event;
+    std::string path_to_LPD_event;
+    // if (WriteImageQueue.front().data == NULL) 
+    // continue;
+    CameraCvToCVMat(WriteImageQueue.front().data, img_event);
+    path_to_LPD_event = "/mnt/sd/OCR_event_images/";
+    SaveImgEvent(img_event, path_to_LPD_event); 
+    for (int i = 0; i < 10; i++)
+    {
+        std::cout << (int) WriteImageQueue.front().data[1920*1080*3 - i] << std::endl;
+    }
 }
 
 void* writeImgThread(void *arg)
 {
-    pthread_mutex_t lock;
-    pthread_mutex_init(&lock, NULL);
-    WriteImage_t writeImg;
-    cv::Mat img_event;
-    std::string path_to_LPD_event;
     for (;;)
     {
-        pthread_mutex_lock(&lock);
+        WriteImage_t writeImg;
+        cv::Mat img_event;
+        std::string path_to_LPD_event;
+        std::lock_guard<std::mutex> lk(g_mutex);
         if (WriteImageQueue.size())
         {
-            writeImg = WriteImageQueue.front();
+            // writeImg = WriteImageQueue.front();
             if (writeImg.data == NULL) 
             continue;
+            CameraCvToCVMat(WriteImageQueue.front().data, img_event);
+            path_to_LPD_event = "/mnt/sd/LPD_event_images/";
+            SaveImgEvent(img_event, path_to_LPD_event);  
+            for (int i = 0; i < 10; i++)
+            {
+                std::cout << (int) WriteImageQueue.front().data[1920*1080*3 - i] << std::endl;
+            }
 
-            img_event = CameraCvToCVMat(writeImg.data);
-            if (writeImg.location.size())
-            {
-                for (int i = 0; i < writeImg.location.size(); i++)
-                {
-                    cv::rectangle(img_event, writeImg.location[i], cv::Scalar(0, 255, 0), 2);
-                    cv::putText(img_event, writeImg.text[i], cv::Point(writeImg.location[i].x, writeImg.location[i].y - 10), cv::FONT_HERSHEY_DUPLEX, 1.0, CV_RGB(255, 0, 0), 2);
-                }
-            }
-            if (writeImg.new_event)
-            {
-                path_to_LPD_event = "/mnt/sd/LPD_event_images/";
-                SaveImgEvent(img_event, path_to_LPD_event);
-            }
+            // if (writeImg.location.size())
+            // {
+            //     for (int i = 0; i < writeImg.location.size(); i++)
+            //     {
+            //         // cv::rectangle(img_event, writeImg.location[i], cv::Scalar(0, 255, 0), 2);
+            //         // cv::putText(img_event, writeImg.text[i], cv::Point(writeImg.location[i].x, writeImg.location[i].y - 10), cv::FONT_HERSHEY_DUPLEX, 1.0, CV_RGB(255, 0, 0), 2);
+            //         // path_to_LPD_event = "/mnt/sd/LPD_event_images/";
+            //         // SaveImgEvent(img_event, path_to_LPD_event);                
+            //     }
+            // }
+            // if (writeImg.new_event)
+            // {
+            //     // path_to_LPD_event = "/mnt/sd/LPD_event_images/";
+            //     // SaveImgEvent(img_event, path_to_LPD_event);
+            // }
             WriteImageQueue.pop();
         }
-        pthread_mutex_unlock(&lock);
         usleep(50000);
     }
-    pthread_mutex_destroy(&lock);
     
     
 }
@@ -102,7 +123,7 @@ void pad_rectangle_from_size(cv::Size size, cv::Rect &rect, int paddingPercent)
 }
 
 
-void SaveImgEvent(cv::Mat image, std::string path)
+void SaveImgEvent(cv::Mat &image, std::string path)
 {
     static int index = 0;
     datetime_t datetime = getDatetime();
@@ -118,11 +139,11 @@ void SaveImgEvent(cv::Mat image, std::string path)
             std::string oldest_folder = getCmdResult("ls -c " + path + " | tail -1");
             std::string sys_cmd = "rm -rf " + path + oldest_folder;
     
-            system(sys_cmd.c_str());
             std::cout << "DELETE FOLDER : " << sys_cmd << std::endl; 
+            system(sys_cmd.c_str());
         }
-        mkdir((path + date2str).c_str(), 0700);
         std::cout << "CREATE FOLDER : " << path + date2str << std::endl;
+        mkdir((path + date2str).c_str(), 0700);
     }
     std::string path_out = path + date2str + "/" + time2str + "_" + std::to_string(index++) +".jpg";
     std::cout << "path_out : " << path_out << std::endl;
@@ -151,7 +172,7 @@ void OpenCvSaveJpeg(CameraHostAPI_StreamIn_GetVideoFrame_Res frameData)
     camera_cv_api_mem_free(&dst.pv_data);
     // cv::Mat Bands[3], merged;
     // cv::split(cv_frame, Bands);
-    // std::vector<cv::Mat> channels = {Bands[0],Bands[2],Bands[1]};
+    // std::vector<cv::Mat> channels = {Bands[2],Bands[1],Bands[0]};
     // cv::merge(channels, merged);
     // cv::rectangle(merged, point_1, point_2, cv::Scalar(255, 0, 0), 2);
 
@@ -164,7 +185,7 @@ void OpenCvSaveJpeg(CameraHostAPI_StreamIn_GetVideoFrame_Res frameData)
 }
 
 
-cv::Mat CameraCvToCVMat(uint8_t* DataPtr)
+void CameraCvToCVMat(uint8_t* DataPtr, cv::Mat &cv_frame)
 {
     CAMERA_CV_API_MAT_ST src;
 
@@ -176,12 +197,11 @@ cv::Mat CameraCvToCVMat(uint8_t* DataPtr)
 
     CAMERA_CV_API_MAT_ST dst;
     int32_t result = camera_cv_api_cvt_color(&src, &dst, CAMERA_CV_CONVERT_RGB888Planar_2_BGR888Packed);
-    cv::Mat cv_frame(MAIN_STREAM_FRAME_HEIGHT, MAIN_STREAM_FRAME_WIDTH, CV_8UC3, (char*)dst.pv_data);
+    cv_frame = cv::Mat(MAIN_STREAM_FRAME_HEIGHT, MAIN_STREAM_FRAME_WIDTH, CV_8UC3, (char*)dst.pv_data);
     cv::cvtColor(cv_frame, cv_frame, cv::COLOR_BGR2RGB);
 
     camera_cv_api_mem_free(&dst.pv_data);
 
-    return cv_frame;
     
 }
 

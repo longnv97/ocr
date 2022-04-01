@@ -55,7 +55,7 @@ void* updateLiveviewThread(void *arg)
         memset(frameUpdateReq.Items, 0, STREAM_OUT_ITEMS_MAX_SIZE);
         
         pthread_mutex_lock(&lock);
-        std::cout << "UpdateParam->data.size() : " << UpdateParam->data.size() << std::endl;
+        // std::cout << "UpdateParam->data.size() : " << UpdateParam->data.size() << std::endl;
         for (auto &obj : UpdateParam->data) 
         {
             cv::Rect live_rec((int) obj.rec.x, (int) obj.rec.y, (int) obj.rec.width, (int) obj.rec.height);              

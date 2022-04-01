@@ -22,18 +22,18 @@ typedef struct
     std::vector<std::string> text;
 } WriteImage_t;
 
-void updateImgToSave(WriteImage_t writeImg);
+void updateImgToSave(WriteImage_t &writeImg);
 void imgHandleInit();
 void OpenCvSaveJpeg(CameraHostAPI_StreamIn_GetVideoFrame_Res frameData);
 void CameraCvSaveJpeg(std::vector<cv::Rect> location, CameraHostAPI_StreamIn_GetVideoFrame_Res frameData);
-void SaveImgEvent(cv::Mat image, std::string path);
+void SaveImgEvent(cv::Mat &image, std::string path);
 int CameraCvResize( CameraHostAPI_StreamIn_GetVideoFrame_Res &data,  
                     int resize_width, 
                     int resize_height);
 int CameraCvResizeToAI( CameraHostAPI_StreamIn_GetVideoFrame_Res &data,
                         int size_width_in, int size_height_in,
                         int resize_width, int resize_height);
-cv::Mat CameraCvToCVMat(uint8_t *DataPtr);
+void CameraCvToCVMat(uint8_t *DataPtr, cv::Mat &cv_frame);
 cv::Mat putBoxToImg(std::vector<cv::Rect> location, cv::Mat image);
 void pad_rectangle(cv::Mat image, cv::Rect &rect, int paddingPercent);
 void pad_rectangle_from_size(cv::Size size, cv::Rect &rect, int paddingPercent);

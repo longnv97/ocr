@@ -162,7 +162,9 @@ int InferenceStart()
                             uint8_t* lpd_bff = new uint8_t[crop_rec.width * crop_rec.height * 3];
                             cropFrameData(frameData.Frame[0].DataPtr, crop_rec, lpd_bff);
                             // std::string path_to_LPD_event = "/mnt/sd/OCR_event_images/";
-                            // cv::Mat lpd_img = CameraCvToCVMatCrop(lpd_bff, crop_rec);
+                            // // cv::Mat lpd_img = CameraCvToCVMatCrop(lpd_bff, crop_rec);
+                            // cv::Mat lpd_img;
+                            // CameraCvToCVMat(frameData.Frame[0].DataPtr, lpd_img);
                             // SaveImgEvent(lpd_img, path_to_LPD_event);
                             //----------------- OCR ----------------------
                             ocr_objects.clear();
@@ -233,9 +235,15 @@ int InferenceStart()
                 writeImg.new_event = true;
                 writeImg.location = location;
                 writeImg.text = text_result;
-
+                
                 if (frameData.Frame[0].DataPtr != NULL && frameData.Frame[0].DataLen == 1920*1080*3)
                     memcpy(writeImg.data, frameData.Frame[0].DataPtr, (size_t)frameData.Frame[0].DataLen);
+
+                // std::string path_to_LPD_event = "/mnt/sd/OCR_event_images/";
+                // // cv::Mat lpd_img = CameraCvToCVMatCrop(lpd_bff, crop_rec);
+                // cv::Mat lpd_img;
+                // CameraCvToCVMat(writeImg.data, lpd_img);
+                // SaveImgEvent(lpd_img, path_to_LPD_event);
 
                 updateImgToSave(writeImg);
                 
