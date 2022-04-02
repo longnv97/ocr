@@ -18,6 +18,7 @@ typedef struct
     bool new_event;
     // uint8_t *DataPtr;
     uint8_t data[1920*1080*3];
+    // cv::Mat image;
     std::vector<cv::Rect> location;
     std::vector<std::string> text;
 } WriteImage_t;

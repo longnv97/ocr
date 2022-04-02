@@ -26,63 +26,39 @@ void updateImgToSave(WriteImage_t &writeImg)
     std::lock_guard<std::mutex> lk(g_mutex);
     if (WriteImageQueue.size() < 3)
         WriteImageQueue.push(writeImg);
-
-    // WriteImageQueue.front();
-    cv::Mat img_event;
-    std::string path_to_LPD_event;
-    // if (WriteImageQueue.front().data == NULL) 
-    // continue;
-    CameraCvToCVMat(WriteImageQueue.front().data, img_event);
-    path_to_LPD_event = "/mnt/sd/OCR_event_images/";
-    SaveImgEvent(img_event, path_to_LPD_event); 
-    for (int i = 0; i < 10; i++)
-    {
-        std::cout << (int) WriteImageQueue.front().data[1920*1080*3 - i] << std::endl;
-    }
 }
 
 void* writeImgThread(void *arg)
 {
+    WriteImage_t writeImg;
+    cv::Mat img_event;
+    std::string path_to_LPD_event;
     for (;;)
     {
-        WriteImage_t writeImg;
-        cv::Mat img_event;
-        std::string path_to_LPD_event;
         std::lock_guard<std::mutex> lk(g_mutex);
         if (WriteImageQueue.size())
         {
-            // writeImg = WriteImageQueue.front();
-            if (writeImg.data == NULL) 
-            continue;
             CameraCvToCVMat(WriteImageQueue.front().data, img_event);
-            path_to_LPD_event = "/mnt/sd/LPD_event_images/";
-            SaveImgEvent(img_event, path_to_LPD_event);  
-            for (int i = 0; i < 10; i++)
+            if (writeImg.location.size())
             {
-                std::cout << (int) WriteImageQueue.front().data[1920*1080*3 - i] << std::endl;
+                for (int i = 0; i < writeImg.location.size(); i++)
+                {
+                    cv::rectangle(img_event, writeImg.location[i], cv::Scalar(0, 255, 0), 2);
+                    cv::putText(img_event, writeImg.text[i], cv::Point(writeImg.location[i].x, writeImg.location[i].y - 10), cv::FONT_HERSHEY_DUPLEX, 1.0, CV_RGB(255, 0, 0), 2);              
+                }
             }
-
-            // if (writeImg.location.size())
-            // {
-            //     for (int i = 0; i < writeImg.location.size(); i++)
-            //     {
-            //         // cv::rectangle(img_event, writeImg.location[i], cv::Scalar(0, 255, 0), 2);
-            //         // cv::putText(img_event, writeImg.text[i], cv::Point(writeImg.location[i].x, writeImg.location[i].y - 10), cv::FONT_HERSHEY_DUPLEX, 1.0, CV_RGB(255, 0, 0), 2);
-            //         // path_to_LPD_event = "/mnt/sd/LPD_event_images/";
-            //         // SaveImgEvent(img_event, path_to_LPD_event);                
-            //     }
-            // }
-            // if (writeImg.new_event)
-            // {
-            //     // path_to_LPD_event = "/mnt/sd/LPD_event_images/";
-            //     // SaveImgEvent(img_event, path_to_LPD_event);
-            // }
+            if (writeImg.new_event)
+            {
+                path_to_LPD_event = "/mnt/sd/LPD_event_images/";
+                SaveImgEvent(img_event, path_to_LPD_event);
+            }
             WriteImageQueue.pop();
         }
-        usleep(50000);
+        else
+        {
+            usleep(50000);
+        }    
     }
-    
-    
 }
 
 void imgHandleInit()
@@ -201,8 +177,6 @@ void CameraCvToCVMat(uint8_t* DataPtr, cv::Mat &cv_frame)
     cv::cvtColor(cv_frame, cv_frame, cv::COLOR_BGR2RGB);
 
     camera_cv_api_mem_free(&dst.pv_data);
-
-    
 }
 
 cv::Mat putBoxToImg(std::vector<cv::Rect> location, cv::Mat image)

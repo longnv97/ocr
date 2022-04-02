@@ -240,9 +240,9 @@ int InferenceStart()
                     memcpy(writeImg.data, frameData.Frame[0].DataPtr, (size_t)frameData.Frame[0].DataLen);
 
                 // std::string path_to_LPD_event = "/mnt/sd/OCR_event_images/";
-                // // cv::Mat lpd_img = CameraCvToCVMatCrop(lpd_bff, crop_rec);
+                // cv::Mat lpd_img = CameraCvToCVMatCrop(lpd_bff, crop_rec);
                 // cv::Mat lpd_img;
-                // CameraCvToCVMat(writeImg.data, lpd_img);
+                // CameraCvToCVMat(frameData.Frame[0].DataPtr, writeImg.image);
                 // SaveImgEvent(lpd_img, path_to_LPD_event);
 
                 updateImgToSave(writeImg);
