@@ -1,0 +1,77 @@
+#convert YOLOv3-tiny to TensorFlow model
+cd /media/longnve/Data/LongNVe_Linux/AICam/CamAbility/tensorflow-yolo-v3
+python3 convert_weights_pb.py --class_names obj.names --data_format NHWC --weights_file yolov3-tiny_best.weights --tiny --size 608
+
+#convert YOLOv3-tiny TensorFlow model to IR
+cd /opt/intel/openvino_2021.3.394/deployment_tools/model_optimizer
+python3 mo_tf.py --input_model '/home/longnve/AICam/CamAbility/tensorflow-yolo-v3/Yolo3 to IR/frozen_darknet_yolov3_model.pb' --transformations_config /opt/intel/openvino_2021/deployment_tools/model_optimizer/extensions/front/tf/yolo_v3_tiny.json --batch 1  --output_dir '/home/longnve/AICam/CamAbility/tensorflow-yolo-v3/Yolo3 to IR'
+
+#convert IR model to GNA
+cd /media/longnve/Data/LongNVe_Linux/AICam/CamAbility/Platform/vpu_model_convert_app_v0.12.00
+./vpu_model_convert_app -m TestData/face-detection-adas-0001.xml -ip U8 -op FP32 -LAYOUT_FORMAT NCHW
+>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+
+ssh root@192.168.1.178 -p 49155
+#
+scp -r -P 49155 root@10.2.64.72:/mnt/sd/LPD_event_images /home/longnve/Desktop
+
+#
+scp -P 49155 /media/longnve/Data/LongNVe_Linux/AICam/CamAbility/Platform/AI_sample/LPR/Data/Sample/LPR/LPR root@192.168.1.178:/mnt/sd/TestData/Sample/LPR/
+
+#download model intel
+https://github.com/openvinotoolkit/open_model_zoo/blob/master/tools/downloader/README.md
+
+cd /opt/intel/openvino_2021.3.394/deployment_tools/open_model_zoo/tools/downloader
+
+python3 downloader.py --name 'name model' --output_dir '/home/longnve/Desktop/Intel_model'
+
+#build demo openvino zoo
+
+/opt/intel/openvino_2021.3.394/deployment_tools/open_model_zoo/demos$ 
+
+./build_demos.sh 
+#run demo text detect
+
+https://github.com/openvinotoolkit/open_model_zoo/blob/master/demos/text_detection_demo/cpp/README.md
+
+/home/longnve/omz_demos_build/intel64/Release
+
+ ./text_detection_demo -m_td '/home/longnve/Desktop/Intel_model/intel/horizontal-text-detection-0001/FP16/horizontal-text-detection-0001.xml' -m_tr '/home/longnve/Desktop/Intel_model/intel/text-recognition-0012/FP16/text-recognition-0012.xml' -i '/home/longnve/Desktop/output_images/event_images/3.jpg' -o /home/longnve/Desktop/output_images/event_images/output.jpg
+
+
+>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+#CamC
+adb connect 10.2.26.173:54641
+adb shell mount -o remount,rw /
+tail -f /var/log/messages | grep BkavAI
+
+adb logcat | grep VAM
+
+#
+https://onlineconvertfree.com/vn/complete/png-raw/
+
+
+export PATH=$PATH:~/android_ndk/android-ndk-r20b
+
+
+#openvino
+./start_workbench.sh -IMAGE_NAME workbench -HTTP_PROXY 'http://prorybsh.bkav.com:3128' -HTTPS_PROXY 'http://proxybsh.bkav.com:3128'
+
+>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+export model
+
+cd AICam/CamAbility/training_model/training_extensions/misc/tensorflow_toolkit/text_detection
+
+python3 tools/export.py   --resolution 128 96   --config model/configuration.yaml   --weights /home/longnve/AICam/CamAbility/training_model/text_detection/init_weights/model_mobilenet_v2_ext/weights/model-523.save_weights
+
+mo.py --model_name text_detection   --input_model '/home/longnve/AICam/CamAbility/training_model/text_detection/init_weights/model_mobilenet_v2_ext/weights/export/frozen_graph.pb'   --reverse_input_channels   --data_type FP32   --input_shape="[1,96,128,3]"   --output_dir /home/longnve/AICam/CamAbility/training_model/text_detection/init_weights/model_mobilenet_v2_ext/weights
+
+
+
+python3 mo_tf.py -m /home/longnve/AICam/CamAbility/training_model/export2/frozen_inference_graph.pb -o /home/longnve/AICam/CamAbility/training_model/export2/weights --tensorflow_use_custom_operations_config ./extensions/front/tf/ssd_support.json --tensorflow_object_detection_api_pipeline_config /home/longnve/AICam/CamAbility/training_model/export2/pipeline.config --data_type=FP32
+
+python3 mo_tf.py -m /home/longnve/AICam/CamAbility/training_model/ssd_mobilenet_v2_coco_2018_03_29/frozen_inference_graph.pb -o /home/longnve/AICam/CamAbility/training_model/export2/ssd_mobilenet_v2_coco_2018_03_29/weights --tensorflow_use_custom_operations_config ./extensions/front/tf/ssd_support.json --tensorflow_object_detection_api_pipeline_config /home/longnve/AICam/CamAbility/training_model/ssd_mobilenet_v2_coco_2018_03_29/pipeline.config --data_type=FP32
+
+
+
+
