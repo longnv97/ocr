@@ -30,7 +30,6 @@ void updateImgToSave(WriteImage_t &writeImg)
 
 void* writeImgThread(void *arg)
 {
-    WriteImage_t writeImg;
     cv::Mat img_event;
     std::string path_to_LPD_event;
     for (;;)
@@ -39,25 +38,22 @@ void* writeImgThread(void *arg)
         if (WriteImageQueue.size())
         {
             CameraCvToCVMat(WriteImageQueue.front().data, img_event);
-            if (writeImg.location.size())
+            if (WriteImageQueue.front().location.size())
             {
-                for (int i = 0; i < writeImg.location.size(); i++)
+                for (int i = 0; i < WriteImageQueue.front().location.size(); i++)
                 {
-                    cv::rectangle(img_event, writeImg.location[i], cv::Scalar(0, 255, 0), 2);
-                    cv::putText(img_event, writeImg.text[i], cv::Point(writeImg.location[i].x, writeImg.location[i].y - 10), cv::FONT_HERSHEY_DUPLEX, 1.0, CV_RGB(255, 0, 0), 2);              
+                    cv::rectangle(img_event, WriteImageQueue.front().location[i], cv::Scalar(0, 255, 0), 2);
+                    cv::putText(img_event, WriteImageQueue.front().text[i], cv::Point(WriteImageQueue.front().location[i].x, WriteImageQueue.front().location[i].y - 10), cv::FONT_HERSHEY_DUPLEX, 1.0, CV_RGB(255, 0, 0), 2);              
                 }
             }
-            if (writeImg.new_event)
+            if (WriteImageQueue.front().new_event)
             {
                 path_to_LPD_event = "/mnt/sd/LPD_event_images/";
                 SaveImgEvent(img_event, path_to_LPD_event);
             }
             WriteImageQueue.pop();
         }
-        else
-        {
-            usleep(50000);
-        }    
+        usleep(50000);   
     }
 }
 
@@ -66,7 +62,7 @@ void imgHandleInit()
     pthread_t pid;
     pthread_create(&pid, NULL, writeImgThread, NULL);
     pthread_detach(pid);
-    std::cout << "image handle init done" << std::endl;
+    std::cout << "Image Handle Init DONE" << std::endl;
 }
 
 

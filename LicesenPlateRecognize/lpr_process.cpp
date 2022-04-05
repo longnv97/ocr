@@ -218,8 +218,6 @@ int InferenceStart()
             auto time = duration_cast<milliseconds>(stop - start);
             std::cout << "Time taken by Licesen Plate Recognize: " << time.count() << " milliseconds" << std::endl;
 
-            std::cout << "live_update.size() : " << live_update.size() << std::endl;
-
             pthread_mutex_lock(&lock);
             UpdateParam.data.clear();
             for (int i = 0; i < live_update.size(); i++)
